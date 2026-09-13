@@ -25,12 +25,32 @@ function createCustomerDisplay(displayId) {
   customerWindow.on('closed', () => { customerWindow = null; });
 }
 
+function printerList() {
+  return mainWindow?.webContents?.getPrintersAsync().then(printers => printers.map(p => ({ name: p.name, displayName: p.displayName, description: p.description || '', status: p.status, isDefault: p.isDefault }))) || Promise.resolve([]);
+}
+
+function printHtml({ html, deviceName, silent = true, pageSize }) {
+  const win = new BrowserWindow({ show: false, width: 800, height: 1000, webPreferences: { contextIsolation: true, nodeIntegration: false } });
+  return new Promise((resolve, reject) => {
+    win.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
+    win.webContents.once('did-finish-load', () => {
+      win.webContents.print({ silent, deviceName: deviceName || undefined, printBackground: true, pageSize: pageSize || undefined }, success => {
+        win.close();
+        if (success) resolve(true); else reject(new Error('Printer did not accept the job.'));
+      });
+    });
+    win.webContents.once('did-fail-load', () => { win.close(); reject(new Error('Could not prepare print job.')); });
+  });
+}
+
 app.whenReady().then(() => {
   createMainWindow();
   ipcMain.handle('system:displays', () => screen.getAllDisplays().map(d => ({ id: d.id, bounds: d.bounds, scaleFactor: d.scaleFactor })));
   ipcMain.handle('display:open', (_, id) => { createCustomerDisplay(id); return true; });
   ipcMain.handle('display:close', () => { if (customerWindow && !customerWindow.isDestroyed()) customerWindow.close(); return true; });
   ipcMain.handle('app:version', () => app.getVersion());
+  ipcMain.handle('printers:list', () => printerList());
+  ipcMain.handle('printer:print', (_, payload) => printHtml(payload));
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createMainWindow(); });
 });
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
