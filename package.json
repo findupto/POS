@@ -1,0 +1,37 @@
+{
+  "name": "findupto-pos",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Premium offline-first QSR POS desktop application",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "desktop": "electron .",
+    "build:win": "npm run build && electron-builder --win nsis portable",
+    "build:dir": "npm run build && electron-builder --dir"
+  },
+  "build": {
+    "appId": "com.findupto.pos",
+    "productName": "Findupto POS",
+    "artifactName": "Findupto-POS-${version}-${arch}.${ext}",
+    "asar": true,
+    "directories": { "output": "release" },
+    "files": ["dist/**/*", "electron/**/*", "package.json"],
+    "win": { "target": [{ "target": "nsis", "arch": ["x64"] }, { "target": "portable", "arch": ["x64"] }], "artifactName": "Findupto-POS-${version}-${arch}.${ext}" },
+    "nsis": { "oneClick": false, "perMachine": true, "allowToChangeInstallationDirectory": true, "createDesktopShortcut": true, "createStartMenuShortcut": true, "shortcutName": "Findupto POS" },
+    "portable": { "artifactName": "Findupto-POS-${version}-Portable.exe" },
+    "publish": null
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "latest",
+    "electron": "latest",
+    "electron-builder": "latest",
+    "lucide-react": "latest",
+    "vite": "latest",
+    "react": "latest",
+    "react-dom": "latest"
+  },
+  "devDependencies": {}
+}
