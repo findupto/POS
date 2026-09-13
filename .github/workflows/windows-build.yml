@@ -10,12 +10,20 @@ jobs:
   build-windows:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
           node-version: 24
       - name: Install dependencies
         run: npm install
+      - name: Diagnose source parser location
+        shell: pwsh
+        run: |
+          $raw = Get-Content .\src\main.jsx -Raw
+          Write-Host "main.jsx length: $($raw.Length)"
+          $start = [Math]::Max(0, 20950)
+          $count = [Math]::Min(500, $raw.Length - $start)
+          $raw.Substring($start, $count)
       - name: Build Windows installer and portable EXE
         run: npm run build:win
       - name: Verify EXE output
