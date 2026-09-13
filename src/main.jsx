@@ -3,83 +3,133 @@ import { createRoot } from 'react-dom/client';
 import * as I from 'lucide-react';
 import './styles.css';
 
-const DEFAULT_SETTINGS = {
-  companyName:'MK Pizza & Ice Bar',
-  address:'Collage Road Abbas Chowk Bhakkar Punjab Pakistan',
-  phone:'03169700025',
-  taxRate:0,
-  currency:'Rs',
-  developer:'Aamir Hayyat Malik',
-  developerPhone:'03331623862',
-  receiptPrinter:'',
-  a4Printer:'',
-  receiptWidth:'80mm'
+const defaults = {
+  companyName: 'MK Pizza & Ice Bar',
+  address: 'Collage Road Abbas Chowk Bhakkar Punjab Pakistan',
+  phone: '03169700025',
+  taxRate: 0,
+  currency: 'Rs',
+  developer: 'Aamir Hayyat Malik',
+  developerPhone: '03331623862',
+  receiptPrinter: '',
+  a4Printer: ''
 };
-const loadSettings=()=>{try{return {...DEFAULT_SETTINGS,...JSON.parse(localStorage.getItem('pos-settings')||'{}')}}catch{return DEFAULT_SETTINGS}};
-const money = n => `Rs ${n.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`;
-const seedItems = [
-  {id:1,name:'Crispy Chicken Burger',cat:'Burgers',price:590,cost:260,emoji:'🍔'},
-  {id:2,name:'Classic Beef Burger',cat:'Burgers',price:690,cost:310,emoji:'🍔'},
-  {id:3,name:'Loaded Fries',cat:'Sides',price:390,cost:150,emoji:'🍟'},
-  {id:4,name:'Spicy Wings',cat:'Sides',price:520,cost:210,emoji:'🍗'},
-  {id:5,name:'Signature Cola',cat:'Drinks',price:180,cost:45,emoji:'🥤'},
-  {id:6,name:'Fresh Lemonade',cat:'Drinks',price:240,cost:65,emoji:'🍋'},
-  {id:7,name:'Chocolate Shake',cat:'Drinks',price:450,cost:130,emoji:'🥤'},
-  {id:8,name:'Family Combo',cat:'Combos',price:1890,cost:760,emoji:'✨'},
-  {id:9,name:'Breakfast Wrap',cat:'Breakfast',price:490,cost:190,emoji:'🌯'},
-  {id:10,name:'Mini Donuts',cat:'Desserts',price:290,cost:90,emoji:'🍩'},
+const products = [
+  [1, 'Crispy Chicken Burger', 'Burgers', 590, '🍔'],
+  [2, 'Classic Beef Burger', 'Burgers', 690, '🍔'],
+  [3, 'Loaded Fries', 'Sides', 390, '🍟'],
+  [4, 'Spicy Wings', 'Sides', 520, '🍗'],
+  [5, 'Signature Cola', 'Drinks', 180, '🥤'],
+  [6, 'Fresh Lemonade', 'Drinks', 240, '🍋'],
+  [7, 'Chocolate Shake', 'Drinks', 450, '🥤'],
+  [8, 'Family Combo', 'Combos', 1890, '✨'],
+  [9, 'Breakfast Wrap', 'Breakfast', 490, '🌯'],
+  [10, 'Mini Donuts', 'Desserts', 290, '🍩']
+].map(([id, name, cat, price, emoji]) => ({ id, name, cat, price, emoji }));
+const moduleList = [
+  ['pos', 'Point of Sale', I.ShoppingCart], ['kds', 'Kitchen Display', I.Layers3],
+  ['menu', 'Menu & Combos', I.Sparkles], ['inventory', 'Inventory', I.Boxes],
+  ['customers', 'Customers & Loyalty', I.Users], ['suppliers', 'Suppliers & POs', I.Truck],
+  ['expenses', 'Expenses & Ledger', I.ReceiptText], ['staff', 'Staff & Payroll', I.BadgeCheck],
+  ['analytics', 'Analytics', I.ChartNoAxesCombined], ['audit', 'Audit & Security', I.ShieldCheck],
+  ['settings', 'Settings', I.Settings]
 ];
-const modules = [
- ['pos','Point of Sale',I.ShoppingCart],['kds','Kitchen Display',I.Layers3],['menu','Menu & Combos',I.Sparkles],['inventory','Inventory',I.Boxes],['customers','Customers & Loyalty',I.Users],['suppliers','Suppliers & POs',I.Truck],['expenses','Expenses & Ledger',I.ReceiptText],['staff','Staff & Payroll',I.BadgeCheck],['analytics','Analytics',I.ChartNoAxesCombined],['audit','Audit & Security',I.ShieldCheck],['settings','Settings',I.Settings]
-];
-const ordersSeed = [
- {no:'#10482',type:'Dine-in',items:'2 × Crispy Chicken Burger',total:1180,status:'READY',age:64},
- {no:'#10483',type:'Takeout',items:'Family Combo + Cola',total:2070,status:'IN_KITCHEN',age:148},
- {no:'#10484',type:'Drive-thru',items:'Beef Burger + Fries',total:1080,status:'PENDING',age:32},
- {no:'#10485',type:'Delivery',items:'2 × Wings + Lemonade',total:1280,status:'READY',age:224},
+const seedOrders = [
+  { no: '#10482', type: 'Dine-in', items: '2 × Crispy Chicken Burger', total: 1180, status: 'READY', age: 64 },
+  { no: '#10483', type: 'Takeout', items: 'Family Combo + Cola', total: 2070, status: 'IN_KITCHEN', age: 148 },
+  { no: '#10484', type: 'Drive-thru', items: 'Beef Burger + Fries', total: 1080, status: 'PENDING', age: 32 },
+  { no: '#10485', type: 'Delivery', items: '2 × Wings + Lemonade', total: 1280, status: 'READY', age: 224 }
 ];
 
-function App(){
- const customerOnly = new URLSearchParams(location.search).get('display')==='customer';
- const [module,setModule]=useState('pos');
- const [items,setItems]=useState(()=>JSON.parse(localStorage.getItem('pos-items')||'null')||seedItems);
- const [settings,setSettings]=useState(loadSettings);
- const [cart,setCart]=useState([]); const [cat,setCat]=useState('All'); const [query,setQuery]=useState(''); const [online,setOnline]=useState(navigator.onLine); const [toast,setToast]=useState('');
- const [orders,setOrders]=useState(ordersSeed); const [discount,setDiscount]=useState(0); const [searchOpen,setSearchOpen]=useState(false);
- useEffect(()=>{localStorage.setItem('pos-items',JSON.stringify(items));},[items]);
- useEffect(()=>{localStorage.setItem('pos-settings',JSON.stringify(settings));},[settings]);
- useEffect(()=>{const a=()=>setOnline(true),b=()=>setOnline(false);addEventListener('online',a);addEventListener('offline',b);return()=>{removeEventListener('online',a);removeEventListener('offline',b)}},[]);
- useEffect(()=>{const fn=e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();setSearchOpen(v=>!v)} if(e.key==='/'&&!searchOpen){e.preventDefault();setSearchOpen(true)} if(e.key==='F1'){e.preventDefault();pay('Cash')} if(e.key==='F2'){e.preventDefault();pay('Card')}};addEventListener('keydown',fn);return()=>removeEventListener('keydown',fn)},[searchOpen,cart]);
- const cats=['All',...new Set(items.map(x=>x.cat))];
- const filtered=items.filter(x=>(cat==='All'||x.cat===cat)&&x.name.toLowerCase().includes(query.toLowerCase()));
- const subtotal=cart.reduce((s,x)=>s+x.price*x.qty,0); const tax=Math.max(0,(subtotal-discount)*(Number(settings.taxRate)||0)/100); const total=Math.max(0,subtotal-discount+tax);
- const add=x=>{setCart(c=>{const found=c.find(i=>i.id===x.id);return found?c.map(i=>i.id===x.id?{...i,qty:i.qty+1}:i):[...c,{...x,qty:1}]});setToast(`${x.name} added`);setTimeout(()=>setToast(''),1200)};
- async function printReceipt(order){if(!window.posDesktop?.print)return;const lines=order.items.map(x=>`<tr><td>${x.qty} × ${x.name}</td><td>Rs ${(x.price*x.qty).toFixed(2)}</td></tr>`).join('');const html=`<html><head><style>@page{size:80mm auto;margin:3mm}body{font-family:Arial,sans-serif;width:74mm;margin:0;font-size:12px}h1{font-size:18px;text-align:center;margin:0 0 4px}.center{text-align:center}table{width:100%;border-collapse:collapse}td{padding:4px 0;border-bottom:1px dashed #aaa}td:last-child{text-align:right}.total{font-size:17px;font-weight:bold;margin-top:8px;display:flex;justify-content:space-between}.muted{font-size:10px;color:#555}</style></head><body><h1>${settings.companyName}</h1><div class="center">${settings.address}<br>${settings.phone}</div><hr><div>Order ${order.no}<br>Payment: ${order.method}</div><table>${lines}</table><div class="total"><span>Total</span><span>Rs ${order.total.toFixed(2)}</span></div><p class="center muted">Thank you for visiting!</p></body></html>`;try{await window.posDesktop.print({html,deviceName:settings.receiptPrinter,pageSize:{width:80000,height:0}});setToast('Receipt sent to printer');setTimeout(()=>setToast(''),1600)}catch(e){setToast(e.message||'Print failed');setTimeout(()=>setToast(''),2000)}}
- async function pay(method){if(!cart.length)return;const no='#'+(10486+orders.length);const order={no,type:'Takeout',items:cart.map(x=>({name:x.name,qty:x.qty,price:x.price})),total:Math.round(total),method,status:'PENDING',age:0};setOrders(o=>[order,...o]);setCart([]);setDiscount(0);setToast(`${method} payment accepted • ${no}`);setTimeout(()=>setToast(''),1800);await printReceipt(order)}
- const nav=(id)=>{setModule(id);if(id!=='pos')setCart([])};
- if(customerOnly) return <CustomerDisplay cart={cart} total={total} settings={settings} />;
- return <div className="app">
-  <aside className="sidebar"><div className="brand"><div className="brandMark">F</div><div><b>Findupto</b><span>POS PRO</span></div></div>
-   <div className="store"><div className="storeDot"/><div><strong>{settings.companyName}</strong><small>Bhakkar · POS Terminal</small></div><I.ChevronsUpDown size={15}/></div>
-   <nav>{modules.map(([id,label,Icon])=><button key={id} className={module===id?'active':''} onClick={()=>nav(id)}><Icon size={18}/><span>{label}</span>{id==='kds'&&<em>4</em>}</button>)}</nav>
-   <div className="sideBottom"><div className="sync"><span className={online?'live':'offline'}/><div><b>{online?'Cloud synced':'Offline mode'}</b><small>{online?'All systems operational':'Orders queued locally'}</small></div></div><button className="userBtn"><div className="avatar">AM</div><div><b>Admin Manager</b><small>Administrator</small></div><I.MoreHorizontal size={16}/></button></div>
-  </aside>
-  <main className="main"><header className="topbar"><div className="crumb"><span>Operations</span><I.ChevronRight size={14}/><b>{modules.find(m=>m[0]===module)?.[1]}</b></div><div className="topActions"><button className="iconBtn" onClick={()=>setSearchOpen(true)}><I.Search size={18}/><kbd>⌘K</kbd></button><button className="iconBtn"><I.Bell size={18}/><i/></button><div className="date">Tax {settings.taxRate}% · {settings.currency}</div></div></header>
-   {module==='pos'?<POS filtered={filtered} cats={cats} cat={cat} setCat={setCat} query={query} setQuery={setQuery} cart={cart} add={add} setCart={setCart} subtotal={subtotal} discount={discount} setDiscount={setDiscount} tax={tax} total={total} pay={pay} online={online}/>:module==='settings'?<Settings settings={settings} setSettings={setSettings}/>:<ModuleView module={module} orders={orders} setOrders={setOrders} items={items} setItems={setItems}/>} 
-  </main>{toast&&<div className="toast"><I.CheckCircle2 size={17}/>{toast}</div>}{searchOpen&&<Command items={items} orders={orders} close={()=>setSearchOpen(false)} jump={nav}/>}</div>
+const read = (key, fallback) => {
+  try { return JSON.parse(localStorage.getItem(key) || 'null') || fallback; } catch { return fallback; }
+};
+const money = (n, currency = 'Rs') => `${currency} ${Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+function App() {
+  const [module, setModule] = useState('pos');
+  const [settings, setSettings] = useState(() => ({ ...defaults, ...read('pos-settings', {}) }));
+  const [items] = useState(products);
+  const [cart, setCart] = useState([]);
+  const [orders, setOrders] = useState(seedOrders);
+  const [category, setCategory] = useState('All');
+  const [query, setQuery] = useState('');
+  const [discount, setDiscount] = useState(0);
+  const [toast, setToast] = useState('');
+  const [online, setOnline] = useState(navigator.onLine);
+  const [command, setCommand] = useState(false);
+
+  useEffect(() => localStorage.setItem('pos-settings', JSON.stringify(settings)), [settings]);
+  useEffect(() => {
+    const on = () => setOnline(true); const off = () => setOnline(false);
+    window.addEventListener('online', on); window.addEventListener('offline', off);
+    return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off); };
+  }, []);
+  useEffect(() => {
+    const key = e => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setCommand(v => !v); }
+      if (e.key === '/' && !command) { e.preventDefault(); setCommand(true); }
+    };
+    window.addEventListener('keydown', key); return () => window.removeEventListener('keydown', key);
+  }, [command]);
+
+  const categories = useMemo(() => ['All', ...new Set(items.map(x => x.cat))], [items]);
+  const visible = items.filter(x => (category === 'All' || x.cat === category) && x.name.toLowerCase().includes(query.toLowerCase()));
+  const subtotal = cart.reduce((sum, x) => sum + x.price * x.qty, 0);
+  const tax = Math.max(0, (subtotal - discount) * (Number(settings.taxRate) || 0) / 100);
+  const total = Math.max(0, subtotal - discount + tax);
+  const notify = text => { setToast(text); setTimeout(() => setToast(''), 1500); };
+  const add = item => {
+    setCart(current => current.some(x => x.id === item.id) ? current.map(x => x.id === item.id ? { ...x, qty: x.qty + 1 } : x) : [...current, { ...item, qty: 1 }]);
+    notify(`${item.name} added`);
+  };
+  const qty = (id, delta) => setCart(current => current.flatMap(x => x.id === id ? (x.qty + delta > 0 ? [{ ...x, qty: x.qty + delta }] : []) : [x]));
+  const pay = method => {
+    if (!cart.length) return;
+    const no = `#${10486 + orders.length}`;
+    setOrders(current => [{ no, type: 'Takeout', items: cart.map(x => `${x.qty} × ${x.name}`).join(', '), total: Math.round(total), status: 'PENDING', age: 0, method }, ...current]);
+    setCart([]); setDiscount(0); notify(`${method} payment accepted · ${no}`);
+  };
+
+  if (new URLSearchParams(location.search).get('display') === 'customer') return <Customer cart={cart} total={total} settings={settings}/>;
+
+  return <div className="app">
+    <aside className="sidebar">
+      <div className="brand"><div className="brandMark">F</div><div><b>Findupto</b><span>POS PRO</span></div></div>
+      <div className="store"><div className="storeDot"/><div><strong>{settings.companyName}</strong><small>Bhakkar · POS Terminal</small></div></div>
+      <nav>{moduleList.map(([id, label, Icon]) => <button key={id} className={module === id ? 'active' : ''} onClick={() => { setModule(id); setCart([]); }}><Icon size={18}/><span>{label}</span>{id === 'kds' && <em>4</em>}</button>)}</nav>
+      <div className="sideBottom"><div className="sync"><span className={online ? 'live' : 'offline'}/><div><b>{online ? 'Cloud synced' : 'Offline mode'}</b><small>{online ? 'All systems operational' : 'Orders queued locally'}</small></div></div><button className="userBtn"><div className="avatar">AM</div><div><b>Admin Manager</b><small>Administrator</small></div></button></div>
+    </aside>
+    <main className="main">
+      <header className="topbar"><div className="crumb"><span>Operations</span><I.ChevronRight size={14}/><b>{moduleList.find(x => x[0] === module)?.[1]}</b></div><div className="topActions"><button className="iconBtn" onClick={() => setCommand(true)}><I.Search size={18}/><kbd>⌘K</kbd></button><div className="date">Tax {settings.taxRate}% · {settings.currency}</div></div></header>
+      {module === 'pos' ? <POS items={visible} categories={categories} category={category} setCategory={setCategory} query={query} setQuery={setQuery} cart={cart} add={add} qty={qty} setCart={setCart} subtotal={subtotal} discount={discount} setDiscount={setDiscount} tax={tax} total={total} pay={pay} currency={settings.currency} online={online}/> : module === 'settings' ? <Settings settings={settings} setSettings={setSettings}/> : <Module module={module} orders={orders} setOrders={setOrders} currency={settings.currency}/>} 
+    </main>
+    {toast && <div className="toast"><I.CheckCircle2 size={17}/>{toast}</div>}
+    {command && <Command items={items} orders={orders} close={() => setCommand(false)} jump={setModule} currency={settings.currency}/>} 
+  </div>;
 }
 
-function POS({filtered,cats,cat,setCat,query,setQuery,cart,add,setCart,subtotal,discount,setDiscount,tax,total,pay,online}){return <section className="pos"><div className="pageHead"><div><p className="eyebrow">FAST CHECKOUT</p><h1>New Order</h1></div><div className="orderTools"><button><I.UserRoundPlus size={17}/> Guest</button><button><I.Utensils size={17}/> Takeout <I.ChevronDown size={14}/></button><span className="offlineBadge"><span className={online?'live':'offline'}/>{online?'LIVE':'OFFLINE'}</span></div></div>
- <div className="posGrid"><div className="catalog"><div className="search"><I.Search size={18}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search menu, SKU or barcode…"/><kbd>/</kbd></div><div className="chips">{cats.map(c=><button key={c} onClick={()=>setCat(c)} className={cat===c?'selected':''}>{c}</button>)}</div><div className="products">{filtered.map(x=><button className="product" key={x.id} onClick={()=>add(x)}><div className="productPic">{x.emoji}<span>+</span></div><div className="productInfo"><b>{x.name}</b><small>{x.cat} · SKU-{String(x.id).padStart(4,'0')}</small><strong>{money(x.price)}</strong></div></button>)}</div></div>
- <aside className="ticket"><div className="ticketHead"><div><p className="eyebrow">CURRENT TICKET</p><h2>New Order</h2></div><button className="clear" onClick={()=>setCart([])}>Clear</button></div>{!cart.length?<div className="empty"><div className="emptyIcon"><I.ShoppingBag size={24}/></div><b>Ready for your order</b><span>Tap a menu item to start</span></div>:<div className="ticketItems">{cart.map(x=><div className="ticketItem" key={x.id}><div><b>{x.name}</b><small>{money(x.price)} each</small></div><div className="qty"><button onClick={()=>setCart(c=>c.flatMap(i=>i.id===x.id?(i.qty>1?[{...i,qty:i.qty-1}]:[]):[i]))}>−</button><span>{x.qty}</span><button onClick={()=>add(x)}>+</button></div><strong>{money(x.price*x.qty)}</strong></div>)}</div>}
- <div className="ticketBottom"><div className="totals"><span>Subtotal <b>{money(subtotal)}</b></span><span>Discount <button className="discountBtn" onClick={()=>setDiscount(discount?0:Math.round(subtotal*.1))}>{discount?'Remove':'Add 10%'}</button><b>− {money(discount)}</b></span><span>Tax <b>{money(tax)}</b></span><div className="grand"><span>Total</span><strong>{money(total)}</strong></div></div><div className="payGrid"><button disabled={!cart.length} onClick={()=>pay('Cash')}><I.Banknote/>Cash <small>F1</small></button><button disabled={!cart.length} onClick={()=>pay('Card')}><I.CreditCard/>Card <small>F2</small></button><button disabled={!cart.length} onClick={()=>pay('QR')}><I.QrCode/>QR</button><button disabled={!cart.length} onClick={()=>pay('Split')}><I.Split/>Split</button></div></div></aside></div></section>}
+function POS({ items, categories, category, setCategory, query, setQuery, cart, add, qty, setCart, subtotal, discount, setDiscount, tax, total, pay, currency, online }) {
+  return <section className="pos"><div className="pageHead"><div><p className="eyebrow">FAST CHECKOUT</p><h1>New Order</h1></div><div className="orderTools"><button><I.UserRoundPlus size={17}/> Guest</button><button><I.Utensils size={17}/> Takeout</button><span className="offlineBadge"><span className={online ? 'live' : 'offline'}/>{online ? 'LIVE' : 'OFFLINE'}</span></div></div>
+    <div className="posGrid"><div className="catalog"><div className="search"><I.Search size={18}/><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search menu, SKU or barcode…"/><kbd>/</kbd></div><div className="chips">{categories.map(c => <button key={c} onClick={() => setCategory(c)} className={category === c ? 'selected' : ''}>{c}</button>)}</div><div className="products">{items.map(item => <button className="product" key={item.id} onClick={() => add(item)}><div className="productPic">{item.emoji}<span>+</span></div><div className="productInfo"><b>{item.name}</b><small>{item.cat} · SKU-{String(item.id).padStart(4, '0')}</small><strong>{money(item.price, currency)}</strong></div></button>)}</div></div>
+      <aside className="ticket"><div className="ticketHead"><div><p className="eyebrow">CURRENT TICKET</p><h2>New Order</h2></div><button className="clear" onClick={() => setCart([])}>Clear</button></div>{cart.length === 0 ? <div className="empty"><div className="emptyIcon"><I.ShoppingBag size={24}/></div><b>Ready for your order</b><span>Tap a menu item to start</span></div> : <div className="ticketItems">{cart.map(item => <div className="ticketItem" key={item.id}><div><b>{item.name}</b><small>{money(item.price, currency)} each</small></div><div className="qty"><button onClick={() => qty(item.id, -1)}>−</button><span>{item.qty}</span><button onClick={() => qty(item.id, 1)}>+</button></div><strong>{money(item.price * item.qty, currency)}</strong></div>)}</div>}<div className="ticketBottom"><div className="totals"><span>Subtotal <b>{money(subtotal, currency)}</b></span><span>Discount <button className="discountBtn" onClick={() => setDiscount(discount ? 0 : Math.round(subtotal * .1))}>{discount ? 'Remove' : 'Add 10%'}</button><b>− {money(discount, currency)}</b></span><span>Tax <b>{money(tax, currency)}</b></span><div className="grand"><span>Total</span><strong>{money(total, currency)}</strong></div></div><div className="payGrid"><button disabled={!cart.length} onClick={() => pay('Cash')}><I.Banknote/>Cash <small>F1</small></button><button disabled={!cart.length} onClick={() => pay('Card')}><I.CreditCard/>Card <small>F2</small></button><button disabled={!cart.length} onClick={() => pay('QR')}><I.QrCode/>QR</button><button disabled={!cart.length} onClick={() => pay('Split')}><I.Columns2/>Split</button></div></div></aside></div></section>;
+}
 
-function Settings({settings,setSettings}){const [printers,setPrinters]=useState([]);const [saving,setSaving]=useState(false);const update=(k,v)=>setSettings(s=>({...s,[k]:v}));const discover=async()=>{setSaving(true);try{const p=await window.posDesktop?.getPrinters?.();setPrinters(p||[])}finally{setSaving(false)}};useEffect(()=>{discover()},[]);const save=()=>{localStorage.setItem('pos-settings',JSON.stringify(settings));setSaving(true);setTimeout(()=>setSaving(false),500)};const printerOptions=printers.map(p=><option key={p.name} value={p.name}>{p.displayName||p.name}{p.isDefault?' · Default':''}</option>);return <section className="module"><div className="pageHead"><div><p className="eyebrow">BUSINESS CONTROL</p><h1>Company & Hardware Settings</h1><p className="sub">Everything below is changeable by an administrator.</p></div><button className="primary" onClick={save}><I.Save size={17}/>{saving?'Saved':'Save Settings'}</button></div><div className="settingsGrid"><div className="settingsCard"><div className="settingsTitle"><I.Store size={19}/><div><h3>Company Profile</h3><span>Printed on receipts, reports and accounts</span></div></div><label>Company Name<input value={settings.companyName} onChange={e=>update('companyName',e.target.value)}/></label><label>Address<textarea value={settings.address} onChange={e=>update('address',e.target.value)}/></label><label>Phone<input value={settings.phone} onChange={e=>update('phone',e.target.value)}/></label><div className="two"><label>Tax Rate %<input type="number" min="0" step="0.01" value={settings.taxRate} onChange={e=>update('taxRate',e.target.value)}/></label><label>Currency<input value={settings.currency} onChange={e=>update('currency',e.target.value)}/></label></div></div><div className="settingsCard"><div className="settingsTitle"><I.Printer size={19}/><div><h3>Printing & Hardware</h3><span>Automatic Windows printer discovery</span></div><button className="filter" onClick={discover}><I.RefreshCw size={15}/>{saving?'Scanning':'Discover'}</button></div><label>80mm Sales Receipt Printer<select value={settings.receiptPrinter} onChange={e=>update('receiptPrinter',e.target.value)}><option value="">System default / Select printer</option>{printerOptions}</select></label><label>A4 History & Accounts Printer<select value={settings.a4Printer} onChange={e=>update('a4Printer',e.target.value)}><option value="">System default / Select printer</option>{printerOptions}</select></label><div className="printerHint"><I.Bluetooth size={17}/><div><b>Bluetooth Thermal Printer</b><span>Pair the 80mm printer in Windows. It will appear here automatically and can be selected for sales receipts.</span></div></div><div className="printerHint"><I.FileText size={17}/><div><b>A4 Reports & Accounts</b><span>History, ledgers, account statements and detailed reports use the selected A4 printer.</span></div></div><div className="printerList"><b>{printers.length} printer(s) discovered</b>{printers.slice(0,6).map(p=><span key={p.name}>{p.displayName||p.name}{p.isDefault?' · Default':''}</span>)}</div></div><div className="settingsCard"><div className="settingsTitle"><I.Code2 size={19}/><div><h3>Developer</h3><span>Application attribution</span></div></div><label>Developer Name<input value={settings.developer} onChange={e=>update('developer',e.target.value)}/></label><label>Developer Phone<input value={settings.developerPhone} onChange={e=>update('developerPhone',e.target.value)}/></label><div className="developerBadge">Built & maintained by <b>{settings.developer}</b> · {settings.developerPhone}</div></div></div></section>}
+function Settings({ settings, setSettings }) {
+  const [printers, setPrinters] = useState([]);
+  const discover = async () => { try { const list = window.posDesktop && window.posDesktop.getPrinters ? await window.posDesktop.getPrinters() : []; setPrinters(list || []); } catch { setPrinters([]); } };
+  useEffect(() => { discover(); }, []);
+  const update = (key, value) => setSettings(current => ({ ...current, [key]: value }));
+  return <section className="module"><div className="pageHead"><div><p className="eyebrow">BUSINESS CONTROL</p><h1>Company & Hardware Settings</h1><p className="sub">Everything below is changeable by an administrator.</p></div><button className="primary" onClick={() => localStorage.setItem('pos-settings', JSON.stringify(settings))}><I.Save size={17}/>Save Settings</button></div><div className="settingsGrid"><div className="settingsCard"><div className="settingsTitle"><I.Store size={19}/><div><h3>Company Profile</h3><span>Printed on receipts, reports and accounts</span></div></div><label>Company Name<input value={settings.companyName} onChange={e => update('companyName', e.target.value)}/></label><label>Address<textarea value={settings.address} onChange={e => update('address', e.target.value)}/></label><label>Phone<input value={settings.phone} onChange={e => update('phone', e.target.value)}/></label><div className="two"><label>Tax Rate %<input type="number" value={settings.taxRate} onChange={e => update('taxRate', e.target.value)}/></label><label>Currency<input value={settings.currency} onChange={e => update('currency', e.target.value)}/></label></div></div><div className="settingsCard"><div className="settingsTitle"><I.Printer size={19}/><div><h3>Printing & Hardware</h3><span>Windows printer discovery</span></div><button className="filter" onClick={discover}><I.RefreshCw size={15}/>Discover</button></div><label>80mm Sales Receipt Printer<select value={settings.receiptPrinter} onChange={e => update('receiptPrinter', e.target.value)}><option value="">System default</option>{printers.map(p => <option key={p.name} value={p.name}>{p.displayName || p.name}</option>)}</select></label><label>A4 History & Accounts Printer<select value={settings.a4Printer} onChange={e => update('a4Printer', e.target.value)}><option value="">System default</option>{printers.map(p => <option key={`a4-${p.name}`} value={p.name}>{p.displayName || p.name}</option>)}</select></label><div className="printerHint"><I.Bluetooth size={17}/><div><b>Bluetooth Thermal Printer</b><span>Pair the 80mm printer in Windows and discover it here.</span></div></div><div className="printerHint"><I.FileText size={17}/><div><b>A4 Reports & Accounts</b><span>History and reports can use the selected A4 printer.</span></div></div></div><div className="settingsCard"><div className="settingsTitle"><I.Code2 size={19}/><div><h3>Developer</h3><span>Application attribution</span></div></div><label>Developer Name<input value={settings.developer} onChange={e => update('developer', e.target.value)}/></label><label>Developer Phone<input value={settings.developerPhone} onChange={e => update('developerPhone', e.target.value)}/></label></div></div></section>;
+}
 
-function ModuleView({module,orders,setOrders,items,setItems}){const meta={kds:['Kitchen Display','Live station queue & SLA control','4 active tickets'],menu:['Menu & Combos','Dynamic catalog, modifiers and smart upsells','10 products'],inventory:['Inventory','Ingredients, BOM costing, waste & 86 controls','3 low stock'],customers:['Customers & Loyalty','Guest CRM, points, gift cards and history','1,248 guests'],suppliers:['Suppliers & POs','Vendor costs, purchasing and receiving','6 suppliers'],expenses:['Expenses & Ledger','Operating costs, drawer reconciliation and P&L','This month'],staff:['Staff & Payroll','Roles, attendance, shifts and performance','24 staff'],analytics:['Analytics','Sales intelligence and operational performance','Live'],audit:['Audit & Security','Immutable activity and risk monitoring','Protected']}[module];return <section className="module"><div className="pageHead"><div><p className="eyebrow">CONTROL CENTER</p><h1>{meta[0]}</h1><p className="sub">{meta[1]}</p></div><button className="primary"><I.Plus size={17}/> {module==='menu'?'Add Item':module==='inventory'?'Receive Stock':'Create New'}</button></div><div className="metricRow"><Metric label="Today Sales" value="Rs 248,640" delta="+18.4%"/><Metric label="Orders" value="486" delta="+12.1%"/><Metric label="Avg. Ticket" value="Rs 511" delta="+4.8%"/><Metric label="Gross Margin" value="62.8%" delta="+2.6%"/></div>{module==='kds'?<KDS orders={orders} setOrders={setOrders}/>:<GenericModule module={module} items={items} setItems={setItems} orders={orders}/>}</section>}
-function Metric({label,value,delta}){return <div className="metric"><span>{label}</span><strong>{value}</strong><small><I.TrendingUp size={13}/>{delta} vs last period</small></div>}
-function KDS({orders,setOrders}){return <div className="kds"><div className="stationTabs"><button className="selected">All Stations <b>4</b></button><button>Grill <b>2</b></button><button>Fry <b>2</b></button><button>Bar <b>1</b></button><button>Assembly <b>2</b></button></div><div className="kdsGrid">{orders.map(o=><article className={`ticketCard ${o.status.toLowerCase()}`} key={o.no}><div className="ticketCardTop"><b>{o.no}</b><span>{o.type}</span></div><div className="timer"><I.Timer size={15}/>{o.age}s <em>{o.age>240?'BREACHED':o.age>120?'WARNING':'ON TARGET'}</em></div><h3>{typeof o.items==='string'?o.items:o.items.map(x=>`${x.qty} × ${x.name}`).join(', ')}</h3><div className="ticketCardFoot"><button onClick={()=>setOrders(a=>a.map(x=>x.no===o.no?{...x,status:x.status==='READY'?'COMPLETED':'READY'}:x))}>{o.status==='READY'?'Bump Order':'Mark Ready'}</button><button className="ghost"><I.Eye size={16}/> Details</button></div></article>)}</div></div>}
-function GenericModule({module,items,setItems,orders}){const rows={inventory:[['Chicken Breast','kg','18.4','25.0','Low'],['Burger Bun','pcs','842','500','Healthy'],['Cheese Slice','pcs','96','150','Low'],['Cooking Oil','L','42','30','Healthy'],['Cola Syrup','L','8','12','Low']],customers:[['Ahmed Khan','0300 ••• 4821','1,840 pts','Rs 48,620','Today'],['Sara Ali','0321 ••• 9082','920 pts','Rs 22,410','Yesterday'],['Hamza R.','0333 ••• 1148','410 pts','Rs 9,870','Sep 10']],suppliers:[['Fresh Foods Ltd','Ingredients','Net 30','Rs 248,400','Active'],['Metro Beverages','Drinks','Net 15','Rs 98,200','Active'],['Prime Packaging','Packaging','Net 30','Rs 72,500','Pending']],staff:[['Ayesha Malik','Store Manager','128h','Rs 86,400','Active'],['Bilal Ahmed','Shift Lead','164h','Rs 64,800','Active'],['Hassan Raza','Cashier','152h','Rs 48,000','On Shift']],expenses:[['Food Supplies','COGS','Rs 82,400','Sep 13','Approved'],['Utilities','Operations','Rs 18,200','Sep 12','Approved'],['Maintenance','Operations','Rs 7,800','Sep 11','Pending']],audit:[['14:22:08','Void Order #10474','Manager approval','Ayesha Malik','Low'],['13:48:31','Drawer Open','Manual access','Bilal Ahmed','Medium'],['12:16:04','Price Override','+Rs 120','Admin Manager','High']]}[module]||[];const head={inventory:['Ingredient','Unit','On Hand','Reorder','Status'],customers:['Guest','Contact','Loyalty','Lifetime Value','Last Visit'],suppliers:['Vendor','Category','Terms','Balance','Status'],staff:['Employee','Role','Hours','Payroll','Status'],expenses:['Description','Category','Amount','Date','Status'],audit:['Time','Action','Details','Actor','Risk']}[module]||[];return <div className="dataCard"><div className="dataToolbar"><div className="search mini"><I.Search size={16}/><input placeholder={`Search ${module}…`}/></div><div><button className="filter"><I.SlidersHorizontal size={16}/> Filters</button><button className="filter"><I.Download size={16}/> Export</button></div></div>{rows.length?<table><thead><tr>{head.map(h=><th key={h}>{h}</th>)}</tr></thead><tbody>{rows.map((r,i)=><tr key={i}>{r.map((v,j)=><td key={j}>{j===r.length-1?<span className={`status ${String(v).toLowerCase().replace(' ','-')}`}>{v}</span>:v}</td>)}</tr>)}</tbody></table>:<div className="genericPanel"><div className="chart"><div className="bars">{[32,48,42,65,54,78,70,92,62,84,73,98].map((h,i)=><i style={{height:`${h}%`}} key={i}/>)}</div></div><div className="insights"><h3>Live operational insights</h3><p>Sales are tracking <b>18.4%</b> above the same period last week. Peak demand is expected between 19:00–21:00.</p><div className="insight"><I.Sparkles size={16}/><span>Upsell opportunity: 34% of burger orders have no drink.</span></div><div className="insight"><I.AlertTriangle size={16}/><span>3 ingredients are below reorder level.</span></div></div></div>}</div>}
-function CustomerDisplay({cart,total,settings}){return <div className="customerDisplay"><div className="cdBrand"><div className="brandMark">F</div><b>{settings.companyName}</b></div><div className="cdCenter"><span>THANK YOU FOR CHOOSING US</span><h1>Your order is being prepared</h1><div className="cdItems">{cart.length?cart.map(x=><div key={x.id}><span>{x.qty} × {x.name}</span><b>{money(x.price*x.qty)}</b></div>):<p>Your items will appear here</p>}</div></div><div className="cdTotal"><span>Total</span><strong>{money(total)}</strong><small>{settings.phone} · We appreciate your visit ✦</small></div></div>}
-function Command({items,orders,close,jump}){const [q,setQ]=useState('');const res=[...items.map(x=>({title:x.name,sub:`Menu · ${money(x.price)}`,action:()=>{close();jump('pos')}}),...orders.map(x=>({title:x.no,sub:`Order · ${x.status}`,action:()=>{close();jump('kds')}}))].filter(x=>x.title.toLowerCase().includes(q.toLowerCase()));return <div className="overlay" onMouseDown={close}><div className="command" onMouseDown={e=>e.stopPropagation()}><div className="commandSearch"><I.Search/><input autoFocus value={q} onChange={e=>setQ(e.target.value)} placeholder="Search anything…"/><kbd>ESC</kbd></div><div className="commandResults">{res.slice(0,8).map((x,i)=><button key={i} onClick={x.action}><I.ArrowUpRight/><div><b>{x.title}</b><span>{x.sub}</span></div></button>)}{!res.length&&<p>No results found</p>}</div><footer><span><kbd>↑↓</kbd> Navigate</span><span><kbd>↵</kbd> Open</span><span><kbd>ESC</kbd> Close</span></footer></div></div>}
-createRoot(document.getElementById('root')).render(<App/>);
+function Module({ module, orders, setOrders, currency }) {
+  if (module === 'kds') return <section className="module"><div className="pageHead"><div><p className="eyebrow">CONTROL CENTER</p><h1>Kitchen Display</h1><p className="sub">Live station queue & SLA control</p></div></div><div className="metricRow"><Metric label="Today Sales" value={`${currency} 248,640`} delta="+18.4%"/><Metric label="Orders" value="486" delta="+12.1%"/><Metric label="Avg. Ticket" value={`${currency} 511`} delta="+4.8%"/><Metric label="Gross Margin" value="62.8%" delta="+2.6%"/></div><div className="kdsGrid">{orders.map(order => <article className={`ticketCard ${order.status.toLowerCase()}`} key={order.no}><div className="ticketCardTop"><b>{order.no}</b><span>{order.type}</span></div><div className="timer"><I.Timer size={15}/>{order.age}s</div><h3>{order.items}</h3><button onClick={() => setOrders(current => current.map(x => x.no === order.no ? { ...x, status: 'READY' } : x))}>Mark Ready</button></article>)}</div></section>;
+  const title = moduleList.find(x => x[0] === module)?.[1] || 'Module';
+  return <section className="module"><div className="pageHead"><div><p className="eyebrow">CONTROL CENTER</p><h1>{title}</h1><p className="sub">Operational control, reporting and management</p></div><button className="primary"><I.Plus size={17}/>Create New</button></div><div className="metricRow"><Metric label="Today Sales" value={`${currency} 248,640`} delta="+18.4%"/><Metric label="Orders" value="486" delta="+12.1%"/><Metric label="Avg. Ticket" value={`${currency} 511`} delta="+4.8%"/><Metric label="Gross Margin" value="62.8%" delta="+2.6%"/></div><div className="genericPanel"><div className="insights"><h3>{title} is ready</h3><p>Use this module to manage your QSR operation. Data remains available while the POS is offline.</p><div className="insight"><I.Sparkles size={16}/><span>Premium offline-first workspace enabled.</span></div><div className="insight"><I.ShieldCheck size={16}/><span>Administrative controls are available from Settings.</span></div></div></div></section>;
+}
+function Metric({ label, value, delta }) { return <div className="metric"><span>{label}</span><strong>{value}</strong><small><I.TrendingUp size={13}/>{delta} vs last period</small></div>; }
+function Customer({ cart, total, settings }) { return <div className="customerDisplay"><div className="cdBrand"><div className="brandMark">F</div><b>{settings.companyName}</b></div><div className="cdCenter"><span>THANK YOU FOR CHOOSING US</span><h1>Your order is being prepared</h1><div className="cdItems">{cart.length ? cart.map(x => <div key={x.id}><span>{x.qty} × {x.name}</span><b>{money(x.price * x.qty, settings.currency)}</b></div>) : <p>Your items will appear here</p>}</div></div><div className="cdTotal"><span>Total</span><strong>{money(total, settings.currency)}</strong><small>{settings.phone} · We appreciate your visit</small></div></div>; }
+function Command({ items, orders, close, jump, currency }) { const [q, setQ] = useState(''); const results = [...items.map(x => ({ title: x.name, sub: `Menu · ${money(x.price, currency)}`, target: 'pos' })), ...orders.map(x => ({ title: x.no, sub: `Order · ${x.status}`, target: 'kds' }))].filter(x => x.title.toLowerCase().includes(q.toLowerCase())).slice(0, 8); return <div className="overlay" onMouseDown={close}><div className="command" onMouseDown={e => e.stopPropagation()}><div className="commandSearch"><I.Search/><input autoFocus value={q} onChange={e => setQ(e.target.value)} placeholder="Search anything…"/></div><div className="commandResults">{results.map((x, i) => <button key={i} onClick={() => { close(); jump(x.target); }}><I.ArrowUpRight/><div><b>{x.title}</b><span>{x.sub}</span></div></button>)}</div></div></div>; }
+
+createRoot(document.getElementById('root')).render(<App />);
