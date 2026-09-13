@@ -2,6 +2,7 @@ name: Windows EXE Build
 on:
   workflow_dispatch:
   push:
+    branches: [main]
     tags: ['v*']
 permissions:
   contents: read
@@ -17,6 +18,12 @@ jobs:
         run: npm install
       - name: Build Windows installer and portable EXE
         run: npm run build:win
+      - name: Verify EXE output
+        shell: pwsh
+        run: |
+          $files = Get-ChildItem .\release\*.exe
+          if (-not $files) { throw 'No EXE artifacts were produced.' }
+          $files | Format-Table Name,Length
       - name: Upload Windows EXEs
         uses: actions/upload-artifact@v4
         with:
